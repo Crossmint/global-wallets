@@ -7,7 +7,7 @@
 <h1>Crossmint Wallets Quickstart</h1>
 
 <div align="center">
-<a href="https://solana-wallets.demos-crossmint.com/">Live Demo</a> | <a href="https://docs.crossmint.com/introduction/platform/wallets">Docs</a> | <a href="https://github.com/crossmint">See all quickstarts</a>
+<a href="https://evm-wallets.demos-crossmint.com/">Live Demo</a> | <a href="https://docs.crossmint.com/introduction/platform/wallets">Docs</a> | <a href="https://github.com/crossmint">See all quickstarts</a>
 </div>
 
 <br>
@@ -16,23 +16,23 @@
 </div>
 
 ## Introduction
-Create and interact with Crossmint wallets in {todo: update}. This quickstart uses Crossmint Auth and uses your external wallet (e.g Phantom, Coinbase, etc.) as a signer for that wallet.
+Create and interact with Crossmint wallets in EVM. This quickstart uses Crossmint Auth and uses your external wallet (e.g Phantom, Metamask, Coinbase, etc.) as a signer for that wallet.
 
 **Learn how to:**
 - Create a wallet
-- View its balance for SOL and SPL tokens
+- View its balance for ETH and ERC20 tokens
 - Send a transaction
 - Add delegated signers to allow third parties to sign transactions on behalf of your wallet
 
 ## Deploy
 Easily deploy the template to Vercel with the button below. You will need to set the required environment variables in the Vercel dashboard.
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FCrossmint%2Fsolana-wallets-quickstart&env=NEXT_PUBLIC_CROSSMINT_API_KEY)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FCrossmint%2Fevm-wallets-quickstart&env=NEXT_PUBLIC_CROSSMINT_API_KEY&env=NEXT_PUBLIC_CHAIN)
 
 ## Setup
 1. Clone the repository and navigate to the project folder:
 ```bash
-git clone https://github.com/crossmint/solana-wallets-quickstart.git && cd solana-wallets-quickstart
+git clone https://github.com/crossmint/evm-wallets-quickstart.git && cd evm-wallets-quickstart
 ```
 
 2. Install all dependencies:
@@ -54,6 +54,11 @@ cp .env.template .env
 4. Get a Crossmint API key from [here](https://docs.crossmint.com/introduction/platform/api-keys/client-side) and add it to the `.env` file.
 ```bash
 NEXT_PUBLIC_CROSSMINT_API_KEY=your_api_key
+```
+
+5. Set the chain you want to use. (default is `optimism-sepolia`)
+```bash
+NEXT_PUBLIC_CHAIN=your_chain
 ```
 
 5. Run the development server:

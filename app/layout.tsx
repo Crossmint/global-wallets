@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "todo: update",
-  description: "todo: update",
+  title: "EVM Wallets Quickstart",
+  description: "Create and interact with Crossmint wallets in EVM",
 };
 
 export default function RootLayout({
