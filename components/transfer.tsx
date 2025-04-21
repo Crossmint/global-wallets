@@ -52,7 +52,7 @@ export function TransferFunds() {
           args: [recipient as Address, BigInt(amount * 10 ** 6)], // USDC has 6 decimals
         });
         txn = await wallet.sendTransaction({
-          to: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238", // USDC token mint on sepolia
+          to: "0x5fd84259d66Cd46123540766Be93DFE6D43130D7", // USDC token mint on OP sepolia
           value: BigInt(0),
           data,
           chain: process.env.NEXT_PUBLIC_CHAIN as EVMSmartWalletChain,
