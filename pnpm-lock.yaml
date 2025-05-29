@@ -9,6 +9,9 @@ catalogs:
     '@crossmint/client-sdk-react-ui':
       specifier: 1.19.21
       version: 1.19.21
+    '@crossmint/client-sdk-window':
+      specifier: ^1.0.0
+      version: 1.0.0
     '@vercel/analytics':
       specifier: 1.5.0
       version: 1.5.0
@@ -33,6 +36,9 @@ catalogs:
     viem:
       specifier: 2.27.0
       version: 2.27.0
+    zod:
+      specifier: 3.22.4
+      version: 3.22.4
 
 importers:
 
@@ -57,11 +63,14 @@ importers:
         specifier: ^5
         version: 5.8.3
 
-  apps/portal:
+  apps/dapp:
     dependencies:
       '@crossmint/client-sdk-react-ui':
         specifier: 'catalog:'
         version: 1.19.21(@babel/core@7.27.3)(@babel/preset-env@7.27.2(@babel/core@7.27.3))(@types/react-dom@19.1.5(@types/react@19.1.6))(@types/react@19.1.6)(bufferutil@4.0.9)(fastestsmallesttextencoderdecoder@1.0.22)(react-dom@19.0.0(react@19.0.0))(react-native@0.74.0(@babel/core@7.27.3)(@babel/preset-env@7.27.2(@babel/core@7.27.3))(@types/react@19.1.6)(bufferutil@4.0.9)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)(typescript@5.8.3)(utf-8-validate@5.0.10)
+      '@crossmint/client-sdk-window':
+        specifier: 'catalog:'
+        version: 1.0.0
       '@vercel/analytics':
         specifier: 'catalog:'
         version: 1.5.0(next@15.2.3(@babel/core@7.27.3)(react-dom@19.0.0(react@19.0.0))(react@19.0.0))(react@19.0.0)
@@ -86,6 +95,45 @@ importers:
       viem:
         specifier: 'catalog:'
         version: 2.27.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.22.4)
+      zod:
+        specifier: 'catalog:'
+        version: 3.22.4
+
+  apps/portal:
+    dependencies:
+      '@crossmint/client-sdk-react-ui':
+        specifier: 'catalog:'
+        version: 1.19.21(@babel/core@7.27.3)(@babel/preset-env@7.27.2(@babel/core@7.27.3))(@types/react-dom@19.1.5(@types/react@19.1.6))(@types/react@19.1.6)(bufferutil@4.0.9)(fastestsmallesttextencoderdecoder@1.0.22)(react-dom@19.0.0(react@19.0.0))(react-native@0.74.0(@babel/core@7.27.3)(@babel/preset-env@7.27.2(@babel/core@7.27.3))(@types/react@19.1.6)(bufferutil@4.0.9)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)(typescript@5.8.3)(utf-8-validate@5.0.10)
+      '@crossmint/client-sdk-window':
+        specifier: 'catalog:'
+        version: 1.0.0
+      '@vercel/analytics':
+        specifier: 'catalog:'
+        version: 1.5.0(next@15.2.3(@babel/core@7.27.3)(react-dom@19.0.0(react@19.0.0))(react@19.0.0))(react@19.0.0)
+      clsx:
+        specifier: 'catalog:'
+        version: 2.1.1
+      next:
+        specifier: 'catalog:'
+        version: 15.2.3(@babel/core@7.27.3)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
+      react:
+        specifier: 'catalog:'
+        version: 19.0.0
+      react-dom:
+        specifier: 'catalog:'
+        version: 19.0.0(react@19.0.0)
+      tailwind-merge:
+        specifier: 'catalog:'
+        version: 3.0.2
+      tw-animate-css:
+        specifier: 'catalog:'
+        version: 1.2.4
+      viem:
+        specifier: 'catalog:'
+        version: 2.27.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.22.4)
+      zod:
+        specifier: 'catalog:'
+        version: 3.22.4
 
 packages:
 
@@ -8287,7 +8335,7 @@ snapshots:
 
   '@wallet-standard/app@1.0.1':
     dependencies:
-      '@wallet-standard/base': 1.0.1
+      '@wallet-standard/base': 1.1.0
 
   '@wallet-standard/app@1.1.0':
     dependencies:
@@ -8312,11 +8360,11 @@ snapshots:
 
   '@wallet-standard/experimental-features@0.1.1':
     dependencies:
-      '@wallet-standard/base': 1.0.1
+      '@wallet-standard/base': 1.1.0
 
   '@wallet-standard/features@1.0.3':
     dependencies:
-      '@wallet-standard/base': 1.0.1
+      '@wallet-standard/base': 1.1.0
 
   '@wallet-standard/features@1.1.0':
     dependencies:
@@ -10560,11 +10608,11 @@ snapshots:
   ox@0.1.2(typescript@5.8.3)(zod@3.22.4):
     dependencies:
       '@adraffy/ens-normalize': 1.11.0
-      '@noble/curves': 1.7.0
-      '@noble/hashes': 1.6.1
-      '@scure/bip32': 1.6.0
-      '@scure/bip39': 1.5.0
-      abitype: 1.0.7(typescript@5.8.3)(zod@3.22.4)
+      '@noble/curves': 1.9.1
+      '@noble/hashes': 1.8.0
+      '@scure/bip32': 1.7.0
+      '@scure/bip39': 1.6.0
+      abitype: 1.0.8(typescript@5.8.3)(zod@3.22.4)
       eventemitter3: 5.0.1
     optionalDependencies:
       typescript: 5.8.3
@@ -10574,10 +10622,10 @@ snapshots:
   ox@0.6.7(typescript@5.8.3)(zod@3.22.4):
     dependencies:
       '@adraffy/ens-normalize': 1.11.0
-      '@noble/curves': 1.8.1
-      '@noble/hashes': 1.7.1
-      '@scure/bip32': 1.6.2
-      '@scure/bip39': 1.5.4
+      '@noble/curves': 1.9.1
+      '@noble/hashes': 1.8.0
+      '@scure/bip32': 1.7.0
+      '@scure/bip39': 1.6.0
       abitype: 1.0.8(typescript@5.8.3)(zod@3.22.4)
       eventemitter3: 5.0.1
     optionalDependencies:
@@ -11700,8 +11748,8 @@ snapshots:
 
   webauthn-p256@0.0.10:
     dependencies:
-      '@noble/curves': 1.7.0
-      '@noble/hashes': 1.6.1
+      '@noble/curves': 1.9.1
+      '@noble/hashes': 1.8.0
 
   webextension-polyfill@0.10.0: {}
 
