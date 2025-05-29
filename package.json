@@ -1,23 +1,14 @@
 {
-  "name": "crossmint-demo-template",
+  "name": "evm-wallet-delegation-quickstart",
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
-  },
-  "dependencies": {
-    "@crossmint/client-sdk-react-ui": "^1.18.2",
-    "@vercel/analytics": "^1.5.0",
-    "clsx": "^2.1.1",
-    "next": "15.2.3",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "tailwind-merge": "^3.0.2",
-    "tw-animate-css": "^1.2.4",
-    "viem": "^2.27.0"
+    "portal:dev": "pnpm --filter portal dev",
+    "portal:build": "pnpm --filter portal build",
+    "portal:start": "pnpm --filter portal start",
+    "dapp:dev": "pnpm --filter dapp dev",
+    "dapp:build": "pnpm --filter dapp build",
+    "dapp:start": "pnpm --filter dapp start"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
