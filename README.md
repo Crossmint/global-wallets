@@ -33,7 +33,7 @@ Easily deploy the template to Vercel with the button below. You will need to set
 ## Setup
 1. Clone the repository and navigate to the project folder:
 ```bash
-git clone https://github.com/crossmint/evm-wallets-quickstart.git && cd evm-wallets-quickstart
+git clone https://github.com/Crossmint/evm-wallet-delegation-quickstart.git && cd evm-wallets-quickstart
 ```
 
 2. Install all dependencies:
