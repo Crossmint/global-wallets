@@ -16,9 +16,9 @@ import { z } from "zod";
 
 // Environment variables
 const PORTAL_URL =
-  process.env.NEXT_PUBLIC_PORTAL_URL || "http://localhost:3000";
+  process.env.NEXT_PUBLIC_PORTAL_URL ?? "http://localhost:3000";
 
-const CHAIN = process.env.NEXT_PUBLIC_CHAIN || "story-testnet";
+const CHAIN = process.env.NEXT_PUBLIC_CHAIN ?? "story-testnet";
 
 // Event schemas
 const FROM_PORTAL_EVENTS = {
@@ -41,8 +41,9 @@ export default function ConnectPage() {
   const { status: authStatus } = useAuth();
   const [receivedSigner, setReceivedSigner] = useState<string | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<
-    "connecting" | "received" | "sent" | "completed"
+    "connecting" | "received" | "processing" | "completed"
   >("connecting");
+  const [isConnecting, setIsConnecting] = useState(false);
   const [childWindow, setChildWindow] = useState<ChildWindow<
     PortalEvents,
     DAppEvents
@@ -85,51 +86,47 @@ export default function ConnectPage() {
     };
   }, []);
 
-  // Send wallet address to Portal when user logs in and we have a signer
-  useEffect(() => {
-    if (
-      isLoggedIn &&
-      receivedSigner &&
-      childWindow &&
-      connectionStatus === "received"
-    ) {
-      console.log("📤 Sending wallet address to Portal:", walletAddress);
-
-      try {
-        childWindow.send("wallet", {
-          address: walletAddress,
-        });
-        setConnectionStatus("sent");
-
-        // Add the received signer as a delegated signer to the wallet
-        addDelegatedSigner(receivedSigner);
-      } catch (error) {
-        console.error("❌ Failed to send wallet address:", error);
-      }
+  const handleConnectToPortal = async () => {
+    if (!receivedSigner || !isLoggedIn || !childWindow || !walletAddress) {
+      console.error("❌ Missing required data for connection");
+      return;
     }
-  }, [
-    isLoggedIn,
-    receivedSigner,
-    walletAddress,
-    connectionStatus,
-    childWindow,
-  ]);
 
-  const addDelegatedSigner = async (signerAddress: string) => {
+    setIsConnecting(true);
+    setConnectionStatus("processing");
+
     try {
-      console.log("🔐 Adding delegated signer to wallet:", signerAddress);
+      console.log("🔐 Adding delegated signer to wallet:", receivedSigner);
 
+      // 1. Check if signer was received from events
+      if (!receivedSigner) {
+        throw new Error("No delegated signer received from Portal");
+      }
+
+      // 2. Add delegated signer to wallet
       if (wallet == null || walletType !== "evm-smart-wallet") {
-        throw new Error("No wallet connected");
+        throw new Error("No EVM smart wallet connected");
       }
 
       await wallet.addDelegatedSigner({
         chain: CHAIN as EVMSmartWalletChain,
-        signer: `evm-keypair:${signerAddress}`,
+        signer: `evm-keypair:${receivedSigner}`,
       });
+
+      console.log("✅ Delegated signer added successfully");
+
+      // 3. Send event back to parent
+      childWindow.send("wallet", {
+        address: walletAddress,
+      });
+
+      console.log("📤 Sent wallet address to Portal:", walletAddress);
       setConnectionStatus("completed");
     } catch (error) {
-      console.error("❌ Failed to add delegated signer:", error);
+      console.error("❌ Failed to connect to Portal:", error);
+      setConnectionStatus("received"); // Reset to allow retry
+    } finally {
+      setIsConnecting(false);
     }
   };
 
@@ -237,25 +234,89 @@ export default function ConnectPage() {
               </div>
             )}
 
-            {/* Received Signer Info */}
+            {/* Received Signer Info & Connect Button */}
             {receivedSigner && (
               <div className="bg-green-50 rounded-xl p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-3">
-                  Delegated Signer
+                  Portal Delegated Signer
                 </h3>
-                <div className="bg-white rounded-lg p-3">
-                  <p className="text-sm text-gray-600 mb-1">
-                    Received from Portal:
+                <div className="bg-white rounded-lg p-4 mb-4">
+                  <p className="text-sm text-gray-600 mb-2">
+                    Portal wants to add this signer to your wallet:
                   </p>
-                  <p className="text-sm font-mono text-green-700 font-medium">
-                    {receivedSigner.slice(0, 8)}...{receivedSigner.slice(-8)}
-                  </p>
-                </div>
-                {connectionStatus === "completed" && (
-                  <div className="mt-3 bg-green-100 rounded-lg p-3">
-                    <p className="text-sm text-green-800 font-medium">
-                      ✅ Successfully added as delegated signer to your wallet
+                  <div className="flex items-center justify-between bg-gray-50 rounded-lg p-3">
+                    <p className="text-sm font-mono text-gray-800 font-medium">
+                      {receivedSigner.slice(0, 12)}...
+                      {receivedSigner.slice(-12)}
                     </p>
+                    <div className="w-6 h-6 bg-green-600 rounded-full flex items-center justify-center">
+                      <svg
+                        className="w-3 h-3 text-white"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <title>Verified icon</title>
+                        <path
+                          fillRule="evenodd"
+                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+
+                {connectionStatus === "received" && (
+                  <button
+                    type="button"
+                    onClick={handleConnectToPortal}
+                    disabled={!receivedSigner || !isLoggedIn || isConnecting}
+                    className="w-full px-4 py-3 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-xl transition-colors text-sm font-medium flex items-center justify-center gap-2"
+                  >
+                    {isConnecting ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        Connecting to Portal...
+                      </>
+                    ) : (
+                      <>
+                        <svg
+                          className="w-4 h-4"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <title>Connect icon</title>
+                          <path
+                            fillRule="evenodd"
+                            d="M12.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-2.293-2.293a1 1 0 010-1.414z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                        Connect to Portal
+                      </>
+                    )}
+                  </button>
+                )}
+
+                {connectionStatus === "completed" && (
+                  <div className="bg-green-100 rounded-lg p-4">
+                    <div className="flex items-center gap-2">
+                      <svg
+                        className="w-5 h-5 text-green-600"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <title>Success icon</title>
+                        <path
+                          fillRule="evenodd"
+                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                      <p className="text-sm text-green-800 font-medium">
+                        ✅ Successfully connected to Portal!
+                      </p>
+                    </div>
                   </div>
                 )}
               </div>

@@ -1,7 +1,7 @@
 interface ConnectionStatusProps {
   receivedSigner: string | null;
   isLoggedIn: boolean;
-  connectionStatus: "connecting" | "received" | "sent" | "completed";
+  connectionStatus: "connecting" | "received" | "processing" | "completed";
 }
 
 export function ConnectionStatus({
@@ -34,13 +34,13 @@ export function ConnectionStatus({
       description:
         connectionStatus === "completed"
           ? "Successfully added to wallet"
-          : connectionStatus === "sent"
+          : connectionStatus === "processing"
           ? "Processing delegated signer..."
           : connectionStatus === "received"
-          ? "Ready to integrate"
+          ? "Ready to connect"
           : "Waiting for previous steps",
       completed: connectionStatus === "completed",
-      active: connectionStatus === "sent",
+      active: connectionStatus === "processing",
     },
   ];
 

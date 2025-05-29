@@ -12,7 +12,7 @@ import { ConnectedDAppCard } from "@/components/connected-dapp-card";
 import { ConnectionModal } from "@/components/connection-modal";
 
 // Environment variables
-const DAPP_URL = process.env.NEXT_PUBLIC_DAPP_URL || "http://localhost:3001";
+const DAPP_URL = process.env.NEXT_PUBLIC_DAPP_URL ?? "http://localhost:3001";
 
 // Event schemas
 const FROM_DAPP_EVENTS = {

@@ -55,7 +55,7 @@ export const ConnectionModal = forwardRef<
         <div className="flex-1 overflow-hidden">
           <iframe
             ref={ref}
-            src={`${dappUrl}/connect`}
+            src={`${dappUrl}`}
             className="w-full h-full border-0 rounded-b-2xl"
             title="DApp Connection"
           />
