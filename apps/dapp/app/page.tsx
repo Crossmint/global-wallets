@@ -115,7 +115,7 @@ export default function DAppPage() {
               <LoginButton />
             ) : isWalletLoading ? (
               <div className="flex items-center justify-center py-8">
-                <div className="w-6 h-6 border-2 border-green-600 border-t-transparent rounded-full animate-spin" />
+                <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
                 <p className="text-gray-600 text-sm ml-3">Loading wallet...</p>
               </div>
             ) : (
@@ -139,7 +139,7 @@ export default function DAppPage() {
                 disabled={isDelegatedSignerLoading}
                 type="button"
                 onClick={handleAddDelegatedSigner}
-                className="w-full py-3 px-4 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white rounded-lg text-sm font-medium transition-colors"
+                className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-lg text-sm font-medium transition-colors"
               >
                 {isDelegatedSignerLoading ? "Adding Signer..." : "Add Signer"}
               </button>
