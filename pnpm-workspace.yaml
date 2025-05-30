@@ -2,7 +2,6 @@ packages:
   - "apps/*"
 catalog:
   "@crossmint/client-sdk-react-ui": 1.19.21
-  "@crossmint/client-sdk-window": "^1.0.0"
   "react": 19.0.0
   "react-dom": 19.0.0
   "@vercel/analytics": 1.5.0
@@ -13,4 +12,3 @@ catalog:
   "viem": 2.27.0
   "wagmi": 2.15.4
   "@tanstack/react-query": 5.79.0
-  "zod": "3.22.4"
