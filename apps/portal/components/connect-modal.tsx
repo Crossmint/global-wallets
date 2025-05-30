@@ -1,47 +1,49 @@
-"use client";
-
 import { forwardRef } from "react";
 
 interface ConnectModalProps {
   isOpen: boolean;
   onClose: () => void;
   dappUrl: string;
+  onIframeLoad?: () => void;
 }
 
 export const ConnectModal = forwardRef<HTMLIFrameElement, ConnectModalProps>(
-  ({ isOpen, onClose, dappUrl }, ref) => {
+  ({ isOpen, onClose, dappUrl, onIframeLoad }, ref) => {
     if (!isOpen) {
       return null;
     }
 
     return (
-      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-2xl w-full max-w-5xl h-5/6 flex flex-col shadow-2xl">
-          <div className="flex items-center justify-between p-6 border-b border-gray-200">
-            <h3 className="text-xl font-semibold text-gray-900">
+      <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-lg w-full max-w-4xl h-[80vh] relative shadow-2xl">
+          {/* Close Button */}
+          <button
+            type="button"
+            onClick={onClose}
+            className="absolute top-4 right-4 z-10 bg-gray-100 hover:bg-gray-200 rounded-full p-2 transition-colors"
+          >
+            ✕
+          </button>
+
+          {/* Header */}
+          <div className="p-6 border-b border-gray-200">
+            <h2 className="text-xl font-semibold text-gray-900">
               Connect to DApp
-            </h3>
-            <button
-              type="button"
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 transition-colors p-2 hover:bg-gray-100 rounded-lg"
-            >
-              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                <title>Close icon</title>
-                <path
-                  fillRule="evenodd"
-                  d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                  clipRule="evenodd"
-                />
-              </svg>
-            </button>
+            </h2>
+            <p className="text-sm text-gray-600 mt-1">
+              Complete the connection process in the DApp
+            </p>
           </div>
-          <div className="flex-1 overflow-hidden">
+
+          {/* Iframe */}
+          <div className="h-[calc(100%-120px)] p-4">
             <iframe
               ref={ref}
-              src={`${dappUrl}/connect`}
-              className="w-full h-full border-0 rounded-b-2xl"
+              src={dappUrl}
+              className="w-full h-full rounded-lg border border-gray-200"
               title="DApp Connection"
+              sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+              onLoad={onIframeLoad}
             />
           </div>
         </div>

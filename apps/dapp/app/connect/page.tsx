@@ -7,12 +7,12 @@ import {
 } from "@crossmint/client-sdk-react-ui";
 import { ChildWindow } from "@crossmint/client-sdk-window";
 import Image from "next/image";
+import { z } from "zod";
 import { LogoutButton } from "@/components/logout";
 import { LoginButton } from "@/components/login";
 import { WalletDisplay } from "@/components/wallet";
 import { Footer } from "@/components/footer";
-import { useEffect, useState } from "react";
-import { z } from "zod";
+import { useState, useEffect } from "react";
 
 // Environment variables
 const PORTAL_URL =
@@ -20,7 +20,7 @@ const PORTAL_URL =
 
 const CHAIN = process.env.NEXT_PUBLIC_CHAIN ?? "story-testnet";
 
-// Event schemas
+// Message schemas
 const FROM_PORTAL_EVENTS = {
   delegatedSigner: z.object({
     signer: z.string(),
@@ -37,45 +37,38 @@ type PortalEvents = typeof FROM_PORTAL_EVENTS;
 type DAppEvents = typeof FROM_DAPP_EVENTS;
 
 export default function ConnectPage() {
-  const { wallet, status: walletStatus, type: walletType } = useWallet();
+  const { wallet, type: walletType } = useWallet();
   const { status: authStatus } = useAuth();
   const [receivedSigner, setReceivedSigner] = useState<string | null>(null);
-  const [childWindow, setChildWindow] = useState<ChildWindow<
-    PortalEvents,
-    DAppEvents
-  > | null>(null);
 
   const walletAddress = wallet?.address;
   const isLoggedIn = !!walletAddress && authStatus === "logged-in";
 
-  // Initialize child window communication
   useEffect(() => {
-    try {
-      const crossmintChild = new ChildWindow<PortalEvents, DAppEvents>(
-        window.parent,
-        PORTAL_URL,
-        {
-          incomingEvents: FROM_PORTAL_EVENTS,
-          outgoingEvents: FROM_DAPP_EVENTS,
-        }
-      );
-
-      setChildWindow(crossmintChild);
-
-      crossmintChild.on("delegatedSigner", (data) => {
-        setReceivedSigner(data.signer);
-      });
-    } catch (error) {
-      console.error("Failed to initialize child window:", error);
+    if (typeof window === "undefined") {
+      return;
     }
 
-    return () => {
-      setChildWindow(null);
-    };
+    const parentWindow = new ChildWindow<PortalEvents, DAppEvents>(
+      window.parent,
+      PORTAL_URL,
+      {
+        incomingEvents: FROM_PORTAL_EVENTS,
+        outgoingEvents: FROM_DAPP_EVENTS,
+      }
+    );
+
+    parentWindow.on("delegatedSigner", (data) => {
+      console.log("📨 Received delegated signer from Portal:", data.signer);
+      setReceivedSigner(data.signer);
+    });
+
+    console.log("🔄 DApp ready for communication");
   }, []);
 
   const handleConnect = async () => {
-    if (!receivedSigner || !isLoggedIn || !childWindow || !walletAddress) {
+    if (!receivedSigner || !isLoggedIn || !walletAddress) {
+      console.error("Missing required data for connection");
       return;
     }
 
@@ -84,14 +77,26 @@ export default function ConnectPage() {
         throw new Error("No EVM smart wallet connected");
       }
 
+      console.log("🔗 Adding delegated signer to wallet...");
       await wallet.addDelegatedSigner({
         chain: CHAIN as EVMSmartWalletChain,
         signer: `evm-keypair:${receivedSigner}`,
       });
 
-      childWindow.send("wallet", {
-        address: walletAddress,
-      });
+      console.log("✅ Delegated signer added successfully");
+      console.log("📤 Sending wallet address back to Portal:", walletAddress);
+
+      const parentWindow = new ChildWindow<PortalEvents, DAppEvents>(
+        window.parent,
+        PORTAL_URL,
+        {
+          incomingEvents: FROM_PORTAL_EVENTS,
+          outgoingEvents: FROM_DAPP_EVENTS,
+        }
+      );
+
+      parentWindow.send("wallet", { address: walletAddress });
+      console.log("🎉 Connection process completed successfully");
     } catch (error) {
       console.error("Failed to connect to Portal:", error);
     }
