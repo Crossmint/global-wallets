@@ -1,36 +1,27 @@
 "use client";
 
 import { useAuth, useWallet } from "@crossmint/client-sdk-react-ui";
-import { IFrameWindow } from "@crossmint/client-sdk-window";
 import Image from "next/image";
-import { useState, useRef } from "react";
-import { z } from "zod";
+import { useState, useEffect } from "react";
 import { LoginButton } from "@/components/login";
 import { WalletCard } from "@/components/wallet";
 import { ConnectDApp } from "@/components/connect";
 import { LogoutButton } from "@/components/logout";
 import { Footer } from "@/components/footer";
-import { ConnectModal } from "@/components/connect-modal";
 import { useAccount } from "wagmi";
+import type {
+  ParentToPopupMessage,
+  PopupToParentMessage,
+  ReadyMessage,
+} from "@/types/popup-communication";
+import {
+  isValidPopupMessage,
+  isValidReadyMessage,
+} from "@/types/popup-communication";
 
 // Environment variables
 const DAPP_URL = process.env.NEXT_PUBLIC_DAPP_URL ?? "http://localhost:3001";
-
-// Message schemas
-const FROM_DAPP_EVENTS = {
-  wallet: z.object({
-    address: z.string(),
-  }),
-};
-
-const FROM_PORTAL_EVENTS = {
-  delegatedSigner: z.object({
-    signer: z.string(),
-  }),
-};
-
-type DAppEvents = typeof FROM_DAPP_EVENTS;
-type PortalEvents = typeof FROM_PORTAL_EVENTS;
+const DAPP_ORIGIN = new URL(DAPP_URL).origin;
 
 export default function PortalPage() {
   const { wallet: smartWallet, status: walletStatus } = useWallet();
@@ -38,65 +29,89 @@ export default function PortalPage() {
   const { status: authStatus } = useAuth();
   const [connectedWallet, setConnectedWallet] = useState<string | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
-  const [showModal, setShowModal] = useState(false);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [popupWindow, setPopupWindow] = useState<Window | null>(null);
+  const [isPopupReady, setIsPopupReady] = useState(false);
 
   const smartWalletAddress = smartWallet?.address;
+
   const isLoggedIn =
     !!smartWalletAddress && !!signerAddress && authStatus === "logged-in";
   const isLoading =
     walletStatus === "in-progress" || authStatus === "initializing";
 
+  // Handle incoming messages from popup
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.origin !== DAPP_ORIGIN) {
+        console.warn("Received message from unknown origin:", event.origin);
+        return;
+      }
+
+      if (isValidReadyMessage(event.data)) {
+        console.log("✅ Popup is ready");
+        setIsPopupReady(true);
+      } else if (isValidPopupMessage(event.data)) {
+        console.log("✅ Received wallet from DApp:", event.data.wallet);
+        setConnectedWallet(event.data.wallet);
+        setIsConnecting(false);
+        setError(null);
+      } else {
+        console.error("Received invalid message format from popup");
+        setError("Received invalid message format from popup");
+        setIsConnecting(false);
+      }
+    };
+
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, []);
+
+  // Send delegated signer when popup is ready
+  useEffect(() => {
+    if (isPopupReady && popupWindow && signerAddress) {
+      const message: ParentToPopupMessage = { delegatedSigner: signerAddress };
+      popupWindow.postMessage(message, DAPP_ORIGIN);
+      console.log("🚀 Sent delegated signer to DApp:", signerAddress);
+    }
+  }, [isPopupReady, popupWindow, signerAddress]);
+
+  // Monitor popup lifecycle
+  useEffect(() => {
+    if (popupWindow) {
+      const interval = setInterval(() => {
+        if (popupWindow.closed) {
+          console.log("Popup was closed");
+          setPopupWindow(null);
+          setIsPopupReady(false);
+          setIsConnecting(false);
+        }
+      }, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [popupWindow]);
+
   const handleConnect = async () => {
     if (!signerAddress) return;
 
     setIsConnecting(true);
-    setShowModal(true);
-  };
+    setError(null);
 
-  const handleIframeLoad = async () => {
-    if (!iframeRef.current || !signerAddress) {
-      return;
-    }
+    const popup = window.open(
+      DAPP_URL,
+      "dapp-connection",
+      "width=500,height=600,scrollbars=yes,resizable=yes"
+    );
 
-    try {
-      const appWindow = IFrameWindow.initExistingIFrame<
-        DAppEvents,
-        PortalEvents
-      >(iframeRef.current, {
-        incomingEvents: FROM_DAPP_EVENTS,
-        outgoingEvents: FROM_PORTAL_EVENTS,
-      });
-
-      // Listen for wallet response
-      appWindow.on("wallet", (data) => {
-        console.log("✅ Received wallet from DApp:", data);
-        setConnectedWallet(data.address);
-        setIsConnecting(false);
-        setShowModal(false);
-      });
-
-      // Send delegated signer with interval hack
-      setInterval(() => {
-        appWindow.send("delegatedSigner", {
-          signer: signerAddress,
-        });
-      }, 1000);
-
-      console.log(
-        "🚀 Started sending delegated signer to DApp:",
-        signerAddress
+    if (popup) {
+      setPopupWindow(popup);
+      console.log("✅ Opened popup window");
+    } else {
+      setError(
+        "Popup was blocked by browser. Please allow popups and try again."
       );
-    } catch (error) {
-      console.error("❌ Failed to initialize iframe communication:", error);
       setIsConnecting(false);
-      setShowModal(false);
     }
-  };
-
-  const handleCloseModal = () => {
-    setShowModal(false);
-    setIsConnecting(false);
   };
 
   if (isLoading) {
@@ -156,6 +171,13 @@ export default function PortalPage() {
         </div>
       </div>
 
+      {/* Error Display */}
+      {error && (
+        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+          <p className="text-red-800 text-sm">{error}</p>
+        </div>
+      )}
+
       {/* Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 justify-center">
         <WalletCard title="Signer" walletAddress={signerAddress} />
@@ -167,15 +189,6 @@ export default function PortalPage() {
           connectedWallet={connectedWallet || undefined}
         />
       </div>
-
-      {/* Connect Modal */}
-      <ConnectModal
-        ref={iframeRef}
-        isOpen={showModal}
-        onClose={handleCloseModal}
-        dappUrl={`${DAPP_URL}/connect`}
-        onIframeLoad={handleIframeLoad}
-      />
 
       {/* Logout Button */}
       <div className="mt-8 flex justify-center">
