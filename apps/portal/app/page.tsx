@@ -1,70 +1,184 @@
-import Image from "next/image";
-import { HomeContent } from "@/app/home";
+"use client";
 
-export default function Home() {
-  return (
-    <div className="grid grid-rows-[0px_1fr_60px] items-center justify-items-center min-h-screen p-2 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <HomeContent />
-      </main>
-      <footer className="row-start-3 flex flex-col gap-4 items-center justify-center">
-        <div className="flex gap-6 flex-wrap items-center justify-center">
-          <a
-            className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-            href="https://github.com/Crossmint/evm-wallet-delegation-quickstart"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              aria-hidden
-              src="/file.svg"
-              alt="File icon"
-              width={16}
-              height={16}
-            />
-            View code
-          </a>
-          <a
-            className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-            href="https://github.com/crossmint"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              aria-hidden
-              src="/window.svg"
-              alt="Window icon"
-              width={16}
-              height={16}
-            />
-            See all quickstarts
-          </a>
-          <a
-            className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-            href="https://crossmint.com"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              aria-hidden
-              src="/globe.svg"
-              alt="Globe icon"
-              width={16}
-              height={16}
-            />
-            Go to crossmint.com →
-          </a>
+import { useAuth, useWallet } from "@crossmint/client-sdk-react-ui";
+import { IFrameWindow } from "@crossmint/client-sdk-window";
+import Image from "next/image";
+import { useState, useRef } from "react";
+import { z } from "zod";
+import { LoginButton } from "@/components/login";
+import { WalletCard } from "@/components/wallet";
+import { ConnectDApp } from "@/components/connect";
+import { ConnectModal } from "@/components/connect-modal";
+import { LogoutButton } from "@/components/logout";
+import { Footer } from "@/components/footer";
+import { useAccount } from "wagmi";
+
+// Environment variables
+const DAPP_URL = process.env.NEXT_PUBLIC_DAPP_URL ?? "http://localhost:3001";
+
+// Event schemas
+const FROM_DAPP_EVENTS = {
+  wallet: z.object({
+    address: z.string(),
+  }),
+};
+
+const FROM_PORTAL_EVENTS = {
+  delegatedSigner: z.object({
+    signer: z.string(),
+  }),
+};
+
+type DAppEvents = typeof FROM_DAPP_EVENTS;
+type PortalEvents = typeof FROM_PORTAL_EVENTS;
+
+export default function PortalPage() {
+  const { wallet: smartWallet, status: walletStatus } = useWallet();
+  const { address: signerAddress } = useAccount();
+  const { status: authStatus } = useAuth();
+  const [connectedWallet, setConnectedWallet] = useState<string | null>(null);
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+
+  const smartWalletAddress = smartWallet?.address;
+  const isLoggedIn =
+    !!smartWalletAddress && !!signerAddress && authStatus === "logged-in";
+  const isLoading =
+    walletStatus === "in-progress" || authStatus === "initializing";
+
+  const handleConnect = async () => {
+    if (!signerAddress) {
+      return;
+    }
+
+    setIsConnecting(true);
+    setShowModal(true);
+
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+
+      if (!iframeRef.current) {
+        throw new Error("Iframe not found");
+      }
+
+      const crossmintWindow = await IFrameWindow.init<DAppEvents, PortalEvents>(
+        iframeRef.current,
+        {
+          incomingEvents: FROM_DAPP_EVENTS,
+          outgoingEvents: FROM_PORTAL_EVENTS,
+          targetOrigin: DAPP_URL,
+        }
+      );
+
+      crossmintWindow.on("wallet", (data) => {
+        console.log("✅ Received wallet from DApp:", data);
+        setConnectedWallet(data.address);
+        setIsConnecting(false);
+        setShowModal(false);
+      });
+
+      crossmintWindow.send("delegatedSigner", {
+        signer: signerAddress,
+      });
+
+      console.log("🚀 Sent delegated signer to DApp:", signerAddress);
+    } catch (error) {
+      console.error("❌ Failed to initialize iframe communication:", error);
+      setIsConnecting(false);
+      setShowModal(false);
+    }
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setIsConnecting(false);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center min-h-[400px]">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-8 h-8 border-4 border-green-600 border-t-transparent rounded-full animate-spin" />
+          <p className="text-gray-600 text-sm">Loading...</p>
         </div>
-        <div className="flex">
+      </div>
+    );
+  }
+
+  if (!isLoggedIn) {
+    return (
+      <div className="flex flex-col gap-6 justify-center items-center min-h-[500px] px-4">
+        <div className="text-center">
           <Image
-            src="/crossmint-leaf.svg"
-            alt="Powered by Crossmint"
+            src="/crossmint.svg"
+            alt="Crossmint logo"
             priority
-            width={152}
-            height={100}
+            width={150}
+            height={150}
+            className="mx-auto mb-6"
           />
+          <h1 className="text-2xl font-bold text-gray-900 mb-3">
+            Portal Wallets
+          </h1>
+          <p className="text-gray-600 max-w-md mx-auto text-sm">
+            Connect your wallet to external DApps
+          </p>
         </div>
-      </footer>
+        <div className="w-full max-w-sm">
+          <LoginButton />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full max-w-6xl mx-auto px-4 py-8">
+      {/* Header */}
+      <div className="flex flex-col mb-8">
+        <Image
+          src="/crossmint.svg"
+          alt="Crossmint logo"
+          priority
+          width={150}
+          height={150}
+          className="mb-6"
+        />
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Portal Wallets</h1>
+          <p className="text-gray-600 text-sm">
+            Connect your wallet to external DApps
+          </p>
+        </div>
+      </div>
+
+      {/* Cards Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 justify-center">
+        <WalletCard title="Signer" walletAddress={signerAddress} />
+        <WalletCard title="Smart Wallet" walletAddress={smartWalletAddress} />
+
+        {/* Connect DApp */}
+        <ConnectDApp
+          onConnect={handleConnect}
+          isConnecting={isConnecting}
+          connectedWallet={connectedWallet || undefined}
+        />
+      </div>
+
+      {/* Logout Button */}
+      <div className="mt-8 flex justify-center">
+        <LogoutButton />
+      </div>
+
+      {/* Connect Modal */}
+      <ConnectModal
+        ref={iframeRef}
+        isOpen={showModal}
+        onClose={handleCloseModal}
+        dappUrl={DAPP_URL}
+      />
+
+      <Footer />
     </div>
   );
 }

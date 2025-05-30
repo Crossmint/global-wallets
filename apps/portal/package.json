@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@crossmint/client-sdk-react-ui": "catalog:",
+    "@crossmint/client-sdk-window": "catalog:",
     "@vercel/analytics": "catalog:",
     "clsx": "catalog:",
     "next": "catalog:",
@@ -17,6 +18,9 @@
     "react-dom": "catalog:",
     "tailwind-merge": "catalog:",
     "tw-animate-css": "catalog:",
-    "viem": "catalog:"
+    "viem": "catalog:",
+    "wagmi": "catalog:",
+    "@tanstack/react-query": "catalog:",
+    "zod": "catalog:"
   }
 }
