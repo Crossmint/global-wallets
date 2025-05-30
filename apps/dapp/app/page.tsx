@@ -11,11 +11,8 @@ import { LoginButton } from "@/components/login";
 import { LogoutButton } from "@/components/logout";
 import { WalletDisplay } from "@/components/wallet";
 import { Footer } from "@/components/footer";
-import type {
-  PopupToParentMessage,
-  ReadyMessage,
-} from "@/types/popup-communication";
-import { isValidParentMessage } from "@/types/popup-communication";
+import type { PopupToParentMessage, ReadyMessage } from "@/types/popup";
+import { isValidParentMessage } from "@/types/popup";
 
 // Environment variables
 const PORTAL_URL =
@@ -24,7 +21,7 @@ const CHAIN = process.env.NEXT_PUBLIC_CHAIN ?? "story-testnet";
 const PORTAL_ORIGIN = new URL(PORTAL_URL).origin;
 
 export default function DAppPage() {
-  const { wallet, status: walletStatus } = useWallet();
+  const { wallet, status: walletStatus, type: walletType } = useWallet();
   const { status: authStatus } = useAuth();
   const [receivedSigner, setReceivedSigner] = useState<string | null>(null);
   const [isDelegatedSignerLoading, setIsDelegatedSignerLoading] =
@@ -63,21 +60,21 @@ export default function DAppPage() {
     return () => window.removeEventListener("message", handleMessage);
   }, []);
 
-  const handleConnect = async () => {
+  const handleAddDelegatedSigner = async () => {
     if (!receivedSigner || !isLoggedIn || !walletAddress) {
       console.error("Missing required data for connection");
       return;
     }
 
     try {
-      if (wallet == null || !("addDelegatedSigner" in wallet)) {
+      if (!wallet || walletType !== "evm-smart-wallet") {
         throw new Error("No EVM smart wallet connected");
       }
 
       setIsDelegatedSignerLoading(true);
 
       console.log("🔗 Adding delegated signer to wallet...");
-      await (wallet as EVMSmartWallet).addDelegatedSigner({
+      await wallet.addDelegatedSigner({
         chain: CHAIN as EVMSmartWalletChain,
         signer: `evm-keypair:${receivedSigner}`,
       });
@@ -89,6 +86,8 @@ export default function DAppPage() {
       window.opener?.postMessage(response, PORTAL_ORIGIN);
 
       console.log("🎉 Connection process completed successfully");
+
+      window.close();
     } catch (error) {
       console.error("Failed to connect to Portal:", error);
     } finally {
@@ -100,20 +99,10 @@ export default function DAppPage() {
     <div className="w-full max-w-4xl mx-auto px-4 py-8">
       {/* Header */}
       <div className="flex flex-col mb-8">
-        <Image
-          src="/crossmint.svg"
-          alt="Crossmint logo"
-          priority
-          width={150}
-          height={150}
-          className="mb-6"
-        />
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">DApp Integration</h1>
-          <p className="text-gray-600 text-sm">
-            Integrate with Portal using delegated signers
-          </p>
-        </div>
+        <h1 className="text-2xl font-bold text-gray-900">DApp Integration</h1>
+        <p className="text-gray-600 text-sm">
+          Integrate with Portal using delegated signers
+        </p>
       </div>
 
       {/* Cards Grid */}
@@ -149,7 +138,7 @@ export default function DAppPage() {
               <button
                 disabled={isDelegatedSignerLoading}
                 type="button"
-                onClick={handleConnect}
+                onClick={handleAddDelegatedSigner}
                 className="w-full py-3 px-4 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white rounded-lg text-sm font-medium transition-colors"
               >
                 {isDelegatedSignerLoading ? "Adding Signer..." : "Add Signer"}
@@ -165,8 +154,6 @@ export default function DAppPage() {
           <LogoutButton />
         </div>
       )}
-
-      <Footer />
     </div>
   );
 }

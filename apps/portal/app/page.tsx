@@ -1,23 +1,16 @@
 "use client";
 
+import { ConnectDApp } from "@/components/connect";
+import { Footer } from "@/components/footer";
+import { LoginButton } from "@/components/login";
+import { LogoutButton } from "@/components/logout";
+import { WalletCard } from "@/components/wallet";
+import type { ParentToPopupMessage } from "@/types/popup";
+import { isValidPopupMessage, isValidReadyMessage } from "@/types/popup";
 import { useAuth, useWallet } from "@crossmint/client-sdk-react-ui";
 import Image from "next/image";
-import { useState, useEffect } from "react";
-import { LoginButton } from "@/components/login";
-import { WalletCard } from "@/components/wallet";
-import { ConnectDApp } from "@/components/connect";
-import { LogoutButton } from "@/components/logout";
-import { Footer } from "@/components/footer";
+import { useEffect, useState } from "react";
 import { useAccount } from "wagmi";
-import type {
-  ParentToPopupMessage,
-  PopupToParentMessage,
-  ReadyMessage,
-} from "@/types/popup-communication";
-import {
-  isValidPopupMessage,
-  isValidReadyMessage,
-} from "@/types/popup-communication";
 
 // Environment variables
 const DAPP_URL = process.env.NEXT_PUBLIC_DAPP_URL ?? "http://localhost:3001";
@@ -71,8 +64,13 @@ export default function PortalPage() {
   useEffect(() => {
     if (isPopupReady && popupWindow && signerAddress) {
       const message: ParentToPopupMessage = { delegatedSigner: signerAddress };
-      popupWindow.postMessage(message, DAPP_ORIGIN);
-      console.log("🚀 Sent delegated signer to DApp:", signerAddress);
+
+      const interval = setInterval(() => {
+        popupWindow.postMessage(message, DAPP_ORIGIN);
+        console.log("🚀 Sent delegated signer to DApp:", signerAddress);
+      }, 1000);
+
+      return () => clearInterval(interval);
     }
   }, [isPopupReady, popupWindow, signerAddress]);
 
@@ -100,7 +98,7 @@ export default function PortalPage() {
     const popup = window.open(
       DAPP_URL,
       "dapp-connection",
-      "width=500,height=600,scrollbars=yes,resizable=yes"
+      "width=500,height=600,scrollbars=yes,resizable=yes,top=100,left=100"
     );
 
     if (popup) {
