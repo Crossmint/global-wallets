@@ -20,7 +20,7 @@ export const ConnectModal = forwardRef<HTMLIFrameElement, ConnectModalProps>(
           <button
             type="button"
             onClick={onClose}
-            className="absolute top-4 right-4 z-10 bg-gray-100 hover:bg-gray-200 rounded-full p-2 transition-colors"
+            className="absolute top-4 right-4 z-10 rounded-full p-2"
           >
             ✕
           </button>

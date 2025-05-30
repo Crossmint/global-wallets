@@ -156,8 +156,8 @@ export default function ConnectPage() {
               Delegated Signer
             </h2>
             <WalletDisplay
-              text={receivedSigner || undefined}
-              type="Portal Signer"
+              text="Fetching signer..."
+              address={receivedSigner || undefined}
             />
             {receivedSigner && isLoggedIn && (
               <button
@@ -179,8 +179,6 @@ export default function ConnectPage() {
           <LogoutButton />
         </div>
       )}
-
-      <Footer />
     </div>
   );
 }
