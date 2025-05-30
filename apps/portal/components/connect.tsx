@@ -22,7 +22,7 @@ export function ConnectDApp({
               Successfully connected to DApp wallet:
             </p>
             <p className="text-sm font-mono text-gray-700 font-medium">
-              {connectedWallet.slice(0, 8)}...{connectedWallet.slice(-6)}
+              {connectedWallet.slice(0, 7)}...{connectedWallet.slice(-5)}
             </p>
           </div>
           <div className="flex items-center gap-2 text-sm text-green-700 bg-green-50 rounded-lg p-2">
