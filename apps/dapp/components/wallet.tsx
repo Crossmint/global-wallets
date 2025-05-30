@@ -15,8 +15,9 @@ export function WalletDisplay({
   type,
   className = "",
 }: WalletDisplayProps) {
-  const displayText =
-    text || (address ? `${address.slice(0, 7)}...${address.slice(-5)}` : "");
+  const displayText = address
+    ? `${address.slice(0, 7)}...${address.slice(-5)}`
+    : text;
   const displayValue = address || text || "";
 
   const handleCopy = async (event: React.MouseEvent<HTMLButtonElement>) => {

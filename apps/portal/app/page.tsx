@@ -8,15 +8,15 @@ import { z } from "zod";
 import { LoginButton } from "@/components/login";
 import { WalletCard } from "@/components/wallet";
 import { ConnectDApp } from "@/components/connect";
-import { ConnectModal } from "@/components/connect-modal";
 import { LogoutButton } from "@/components/logout";
 import { Footer } from "@/components/footer";
+import { ConnectModal } from "@/components/connect-modal";
 import { useAccount } from "wagmi";
 
 // Environment variables
 const DAPP_URL = process.env.NEXT_PUBLIC_DAPP_URL ?? "http://localhost:3001";
 
-// Event schemas
+// Message schemas
 const FROM_DAPP_EVENTS = {
   wallet: z.object({
     address: z.string(),
@@ -48,41 +48,45 @@ export default function PortalPage() {
     walletStatus === "in-progress" || authStatus === "initializing";
 
   const handleConnect = async () => {
-    if (!signerAddress) {
-      return;
-    }
+    if (!signerAddress) return;
 
     setIsConnecting(true);
     setShowModal(true);
+  };
+
+  const handleIframeLoad = async () => {
+    if (!iframeRef.current || !signerAddress) {
+      return;
+    }
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      const appWindow = IFrameWindow.initExistingIFrame<
+        DAppEvents,
+        PortalEvents
+      >(iframeRef.current, {
+        incomingEvents: FROM_DAPP_EVENTS,
+        outgoingEvents: FROM_PORTAL_EVENTS,
+      });
 
-      if (!iframeRef.current) {
-        throw new Error("Iframe not found");
-      }
-
-      const crossmintWindow = await IFrameWindow.init<DAppEvents, PortalEvents>(
-        iframeRef.current,
-        {
-          incomingEvents: FROM_DAPP_EVENTS,
-          outgoingEvents: FROM_PORTAL_EVENTS,
-          targetOrigin: DAPP_URL,
-        }
-      );
-
-      crossmintWindow.on("wallet", (data) => {
+      // Listen for wallet response
+      appWindow.on("wallet", (data) => {
         console.log("✅ Received wallet from DApp:", data);
         setConnectedWallet(data.address);
         setIsConnecting(false);
         setShowModal(false);
       });
 
-      crossmintWindow.send("delegatedSigner", {
-        signer: signerAddress,
-      });
+      // Send delegated signer with interval hack
+      setInterval(() => {
+        appWindow.send("delegatedSigner", {
+          signer: signerAddress,
+        });
+      }, 1000);
 
-      console.log("🚀 Sent delegated signer to DApp:", signerAddress);
+      console.log(
+        "🚀 Started sending delegated signer to DApp:",
+        signerAddress
+      );
     } catch (error) {
       console.error("❌ Failed to initialize iframe communication:", error);
       setIsConnecting(false);
@@ -157,7 +161,6 @@ export default function PortalPage() {
         <WalletCard title="Signer" walletAddress={signerAddress} />
         <WalletCard title="Smart Wallet" walletAddress={smartWalletAddress} />
 
-        {/* Connect DApp */}
         <ConnectDApp
           onConnect={handleConnect}
           isConnecting={isConnecting}
@@ -165,18 +168,19 @@ export default function PortalPage() {
         />
       </div>
 
-      {/* Logout Button */}
-      <div className="mt-8 flex justify-center">
-        <LogoutButton />
-      </div>
-
       {/* Connect Modal */}
       <ConnectModal
         ref={iframeRef}
         isOpen={showModal}
         onClose={handleCloseModal}
-        dappUrl={DAPP_URL}
+        dappUrl={`${DAPP_URL}/connect`}
+        onIframeLoad={handleIframeLoad}
       />
+
+      {/* Logout Button */}
+      <div className="mt-8 flex justify-center">
+        <LogoutButton />
+      </div>
 
       <Footer />
     </div>
