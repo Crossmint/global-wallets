@@ -19,6 +19,8 @@
     "tailwind-merge": "catalog:",
     "tw-animate-css": "catalog:",
     "viem": "catalog:",
+    "wagmi": "catalog:",
+    "@tanstack/react-query": "catalog:",
     "zod": "catalog:"
   }
 }

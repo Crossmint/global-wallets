@@ -3,10 +3,14 @@ import { LogoutButton } from "./logout";
 import { WalletDisplay } from "./wallet-display";
 
 interface WalletCardProps {
+  title?: string;
   walletAddress: string;
 }
 
-export function WalletCard({ walletAddress }: WalletCardProps) {
+export function WalletCard({
+  walletAddress,
+  title = "Your Wallet",
+}: WalletCardProps) {
   return (
     <div className="bg-gradient-to-br from-blue-50 to-indigo-100 border border-blue-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow">
       <div className="flex flex-col gap-4">
@@ -25,10 +29,9 @@ export function WalletCard({ walletAddress }: WalletCardProps) {
               />
             </svg>
           </div>
-          <h2 className="text-xl font-semibold text-gray-900">Your Wallet</h2>
+          <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
         </div>
         <WalletDisplay address={walletAddress} />
-        <LogoutButton />
       </div>
     </div>
   );

@@ -10,6 +10,8 @@ import { WalletCard } from "@/components/wallet-card";
 import { ConnectDAppCard } from "@/components/connect-dapp-card";
 import { ConnectedDAppCard } from "@/components/connected-dapp-card";
 import { ConnectionModal } from "@/components/connection-modal";
+import { LogoutButton } from "@/components/logout";
+import { useAccount } from "wagmi";
 
 // Environment variables
 const DAPP_URL = process.env.NEXT_PUBLIC_DAPP_URL ?? "http://localhost:3001";
@@ -31,20 +33,24 @@ type DAppEvents = typeof FROM_DAPP_EVENTS;
 type PortalEvents = typeof FROM_PORTAL_EVENTS;
 
 export default function PortalPage() {
-  const { wallet, status: walletStatus } = useWallet();
+  const { wallet: smartWallet, status: walletStatus } = useWallet();
+  const { address: signerAddress } = useAccount();
   const { status: authStatus } = useAuth();
   const [connectedWallet, setConnectedWallet] = useState<string | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
-  const walletAddress = wallet?.address;
-  const isLoggedIn = !!walletAddress && authStatus === "logged-in";
+  const smartWalletAddress = smartWallet?.address;
+  const isLoggedIn =
+    !!smartWalletAddress && !!signerAddress && authStatus === "logged-in";
   const isLoading =
     walletStatus === "in-progress" || authStatus === "initializing";
 
   const handleConnect = async () => {
-    if (!walletAddress) return;
+    if (!signerAddress) {
+      return;
+    }
 
     setIsConnecting(true);
     setShowModal(true);
@@ -73,10 +79,10 @@ export default function PortalPage() {
       });
 
       crossmintWindow.send("delegatedSigner", {
-        signer: walletAddress,
+        signer: signerAddress,
       });
 
-      console.log("🚀 Sent delegated signer to DApp:", walletAddress);
+      console.log("🚀 Sent delegated signer to DApp:", signerAddress);
     } catch (error) {
       console.error("❌ Failed to initialize iframe communication:", error);
       setIsConnecting(false);
@@ -147,7 +153,9 @@ export default function PortalPage() {
 
       {/* Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <WalletCard walletAddress={walletAddress} />
+        <WalletCard walletAddress={signerAddress} title="Signer" />
+        <WalletCard walletAddress={smartWalletAddress} title="Smart Wallet" />
+        <LogoutButton />
         <ConnectDAppCard
           onConnect={handleConnect}
           isConnecting={isConnecting}
