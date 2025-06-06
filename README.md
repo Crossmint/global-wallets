@@ -19,30 +19,30 @@ This quickstart demonstrates the **Portal Wallets Integration** - enabling Porta
 
 **High-level Flow:**
 - User logs in to Portal → gets a non-custodial signer and smart wallet created
-- User clicks "Connect to DApp" button → Portal opens iframe to DApp's main page
-- Portal sends its non-custodial signer as a delegated signer to the DApp via iframe
+- User clicks "Connect to DApp" button → Portal opens popup to DApp's main page
+- Portal sends its non-custodial signer as a delegated signer to the DApp via popup
 - DApp user logs in and adds the delegated signer to their smart wallet
 - DApp sends its wallet address back to Portal
 - Portal can now use the DApp's smart wallet using Portal's signer
 
 **What you'll learn:**
-- How to implement iframe communication between Portal and DApps
+- How to implement popup communication between Portal and DApps
 - Delegated signer flow for cross-application wallet usage
 - Crossmint wallet integration in a monorepo structure
-- Message-based communication between parent and child windows
+- Message-based communication between parent and popup windows
 
 ## Architecture
 This is a **pnpm monorepo** with two Next.js applications:
 
 - **Portal App** (`apps/portal/`) - Runs on `http://localhost:3000`
   - Main Portal platform where users log in
-  - "Connect to DApp" button opens iframe modal to DApp
+  - "Connect to DApp" button opens popup window to DApp
   - Sends delegated signer via postMessage
   - Receives wallet address from DApp
   
 - **DApp App** (`apps/dapp/`) - Runs on `http://localhost:3001`  
   - Represents an external DApp (like Magma)
-  - Main page detects if it's in iframe and adapts UI accordingly
+  - Main page detects if it's in popup and adapts UI accordingly
   - Receives delegated signers from Portal via postMessage
   - Sends wallet address back to Portal after adding delegated signer
 
@@ -96,14 +96,14 @@ pnpm dapp:dev
 - User logs in to Portal with their wallet
 - Portal creates a Crossmint smart wallet
 - User clicks "Connect to DApp" button
-- Portal opens iframe modal showing DApp (localhost:3001)
+- Portal opens popup window showing DApp (localhost:3001)
 - Portal sends delegated signer to DApp via postMessage
 - Portal waits for DApp wallet address response
 - Shows "Connected DApp" card when successful
 
 ### 2. **DApp Side (localhost:3001)**
 - When accessed directly: shows normal DApp interface
-- When accessed in iframe: shows "Connect DApp to Portal" interface
+- When accessed in popup: shows "Connect DApp to Portal" interface
 - User logs in to create DApp wallet
 - DApp receives delegated signer from Portal
 - User clicks "Add Delegated Signer" to confirm
@@ -115,81 +115,91 @@ pnpm dapp:dev
 2. Open Portal at `http://localhost:3000`
 3. Log in to Portal
 4. Click "Connect to DApp" button
-5. In the iframe, log in to DApp
+5. In the popup, log in to DApp
 6. Click "Add Delegated Signer" when prompted
 7. See success messages on both sides
 8. Portal now shows "Connected DApp" card with wallet address
 
 ## Implementation Details
 
-### iframe Communication
-The implementation uses the **`@crossmint/client-sdk-window`** package for secure cross-origin communication:
+### Popup Communication
+The implementation uses native **postMessage API** for secure cross-origin communication:
 
-**Portal (Parent) - uses `IFrameWindow`:**
+**Portal (Parent) - manages popup window:**
 ```javascript
-import { IFrameWindow } from "@crossmint/client-sdk-window";
+// Open popup window
+const popup = window.open(
+  DAPP_URL,
+  "dapp-connection",
+  "width=500,height=600,scrollbars=yes,resizable=yes,top=100,left=100"
+);
 
-// Initialize iframe communication
-const crossmintWindow = await IFrameWindow.init(iframeRef.current, {
-  incomingEvents: FROM_DAPP_EVENTS,
-  outgoingEvents: FROM_PORTAL_EVENTS,
-  targetOrigin: "http://localhost:3001",
-});
-
-// Listen for events from DApp
-crossmintWindow.on("wallet", (data) => {
-  setConnectedWallet(data.address);
-});
-
-// Send events to DApp
-crossmintWindow.send("delegatedSigner", {
-  signer: walletAddress,
-});
-```
-
-**DApp (Child) - uses `ChildWindow`:**
-```javascript
-import { ChildWindow } from "@crossmint/client-sdk-window";
-
-// Initialize child window communication
-const crossmintChild = new ChildWindow(window.parent, "http://localhost:3000", {
-  incomingEvents: FROM_PORTAL_EVENTS,
-  outgoingEvents: FROM_DAPP_EVENTS,
-});
-
-// Handshake with parent
-await crossmintChild.handshakeWithParent();
-
-// Listen for events from Portal
-crossmintChild.on("delegatedSigner", (data) => {
-  setReceivedSigner(data.signer);
-});
-
-// Send events to Portal
-crossmintChild.send("wallet", {
-  address: walletAddress,
-});
-```
-
-**Event Schemas (Type-Safe with Zod):**
-```javascript
-const FROM_DAPP_EVENTS = {
-  wallet: z.object({
-    address: z.string(),
-  }),
+// Handle incoming messages from popup
+const handleMessage = (event: MessageEvent) => {
+  if (event.origin !== DAPP_ORIGIN) return;
+  
+  if (isValidReadyMessage(event.data)) {
+    setIsPopupReady(true);
+  } else if (isValidPopupMessage(event.data)) {
+    setConnectedWallet(event.data.wallet);
+  }
 };
 
-const FROM_PORTAL_EVENTS = {
-  delegatedSigner: z.object({
-    signer: z.string(),
-  }),
-};
+// Send delegated signer when popup is ready
+useEffect(() => {
+  if (isPopupReady && popupWindow && signerAddress) {
+    const message: ParentToPopupMessage = { delegatedSigner: signerAddress };
+    
+    const interval = setInterval(() => {
+      popupWindow.postMessage(message, DAPP_ORIGIN);
+    }, 1000);
+    
+    return () => clearInterval(interval);
+  }
+}, [isPopupReady, popupWindow, signerAddress]);
 ```
 
-### iframe Detection
-DApp detects if it's running in an iframe:
+**DApp (Popup) - communicates with parent:**
 ```javascript
-const isInIframe = window.self !== window.top;
+// Send ready message to parent on mount
+useEffect(() => {
+  const readyMessage: ReadyMessage = { type: "ready" };
+  window.opener?.postMessage(readyMessage, PORTAL_ORIGIN);
+}, []);
+
+// Handle messages from parent window
+const handleMessage = (event: MessageEvent) => {
+  if (event.origin !== PORTAL_ORIGIN) return;
+  
+  if (isValidParentMessage(event.data)) {
+    setReceivedSigner(event.data.delegatedSigner);
+  }
+};
+
+// Send wallet address back to parent
+const response: PopupToParentMessage = { wallet: walletAddress };
+window.opener?.postMessage(response, PORTAL_ORIGIN);
+```
+
+**Message Types (Type-Safe with TypeScript):**
+```javascript
+interface ParentToPopupMessage {
+  delegatedSigner: string;
+}
+
+interface PopupToParentMessage {
+  wallet: string;
+}
+
+interface ReadyMessage {
+  type: 'ready';
+}
+```
+
+### Popup Detection
+DApp detects if it's running in a popup:
+```javascript
+const isInPopup = window.opener !== null;
 ```
 
 ### Responsive Design
@@ -210,20 +220,20 @@ pnpm dapp:build
 
 ## Using in production
 1. Create a [production API key](https://docs.crossmint.com/introduction/platform/api-keys/client-side).
-2. Update the iframe URLs in Portal to point to your production DApp URL.
-3. Update the `targetOrigin` in both IFrameWindow and ChildWindow for your production domains.
+2. Update the popup URLs in Portal to point to your production DApp URL.
+3. Update the origin validation in both Portal and DApp for your production domains.
 4. Deploy both applications to your preferred hosting platform.
 
 ## Key Files
-- `apps/portal/app/home.tsx` - Portal home with Connect button and iframe modal using `IFrameWindow`
-- `apps/dapp/app/home.tsx` - DApp main page with iframe detection and `ChildWindow` communication  
+- `apps/portal/app/page.tsx` - Portal home with Connect button and popup window using native postMessage
+- `apps/dapp/app/page.tsx` - DApp main page with popup detection and postMessage communication  
 - `pnpm-workspace.yaml` - Monorepo configuration with shared dependencies
 
 ## Production Ready
-This implementation uses the official `@crossmint/client-sdk-window` package for secure, type-safe iframe communication between Portal and external DApps. The package provides:
+This implementation uses native **postMessage API** for secure, type-safe popup communication between Portal and external DApps. The implementation provides:
 
-- **Type Safety**: Zod schema validation for all events
-- **Handshake Protocol**: Secure connection establishment
-- **Error Handling**: Built-in timeout and retry mechanisms
-- **Cross-Origin Security**: Proper origin validation
+- **Type Safety**: TypeScript interfaces with runtime validation for all messages
+- **Ready Protocol**: Secure connection establishment with ready handshake
+- **Error Handling**: Built-in popup lifecycle monitoring and error handling
+- **Cross-Origin Security**: Proper origin validation for all messages
 - **Event Management**: Clean event listener management with automatic cleanup
