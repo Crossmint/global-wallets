@@ -2,6 +2,7 @@
 import {
   CrossmintAuthProvider,
   CrossmintProvider,
+  CrossmintWalletProvider,
 } from "@crossmint/client-sdk-react-ui";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { WagmiProvider } from "wagmi";
@@ -22,14 +23,18 @@ export function Providers({ children }: { children: React.ReactNode }) {
         <CrossmintProvider apiKey={crossmintApiKey}>
           <CrossmintAuthProvider
             authModalTitle="Portal Wallet"
-            embeddedWallets={{
-              createOnLogin: "all-users",
-              type: "evm-smart-wallet",
-              showPasskeyHelpers: true,
-            }}
             loginMethods={["web3:evm-only"]}
           >
-            {children}
+            <CrossmintWalletProvider
+              createOnLogin={{
+                chain: "story-testnet",
+                signer: {
+                  type: "external-wallet",
+                },
+              }}
+            >
+              {children}
+            </CrossmintWalletProvider>
           </CrossmintAuthProvider>
         </CrossmintProvider>
       </QueryClientProvider>

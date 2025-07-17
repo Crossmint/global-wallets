@@ -1,27 +1,20 @@
 "use client";
 
 import { useAuth, useWallet } from "@crossmint/client-sdk-react-ui";
-import type {
-  EVMSmartWalletChain,
-  EVMSmartWallet,
-} from "@crossmint/client-sdk-react-ui";
-import Image from "next/image";
 import { useState, useEffect } from "react";
 import { LoginButton } from "@/components/login";
 import { LogoutButton } from "@/components/logout";
 import { WalletDisplay } from "@/components/wallet";
-import { Footer } from "@/components/footer";
 import type { PopupToParentMessage, ReadyMessage } from "@/types/popup";
 import { isValidParentMessage } from "@/types/popup";
 
 // Environment variables
 const PORTAL_URL =
   process.env.NEXT_PUBLIC_PORTAL_URL ?? "http://localhost:3000";
-const CHAIN = process.env.NEXT_PUBLIC_CHAIN ?? "story-testnet";
 const PORTAL_ORIGIN = new URL(PORTAL_URL).origin;
 
 export default function DAppPage() {
-  const { wallet, status: walletStatus, type: walletType } = useWallet();
+  const { wallet, status: walletStatus } = useWallet();
   const { status: authStatus } = useAuth();
   const [receivedSigner, setReceivedSigner] = useState<string | null>(null);
   const [isDelegatedSignerLoading, setIsDelegatedSignerLoading] =
@@ -67,7 +60,7 @@ export default function DAppPage() {
     }
 
     try {
-      if (!wallet || walletType !== "evm-smart-wallet") {
+      if (!wallet) {
         throw new Error("No EVM smart wallet connected");
       }
 
@@ -75,8 +68,7 @@ export default function DAppPage() {
 
       console.log("🔗 Adding delegated signer to wallet...");
       await wallet.addDelegatedSigner({
-        chain: CHAIN as EVMSmartWalletChain,
-        signer: `evm-keypair:${receivedSigner}`,
+        signer: `external-wallet:${receivedSigner}`,
       });
 
       console.log("✅ Delegated signer added successfully");
