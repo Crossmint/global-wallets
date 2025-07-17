@@ -5,12 +5,12 @@ import { Footer } from "@/components/footer";
 import { LoginButton } from "@/components/login";
 import { LogoutButton } from "@/components/logout";
 import { WalletCard } from "@/components/wallet";
-import type { ParentToPopupMessage } from "@/types/popup";
+import type { ParentToPopupMessage, PopupToParentMessage } from "@/types/popup";
 import { isValidPopupMessage, isValidReadyMessage } from "@/types/popup";
 import { useAuth, useWallet } from "@crossmint/client-sdk-react-ui";
 import Image from "next/image";
-import { useEffect, useState } from "react";
-import { useAccount } from "wagmi";
+import { useCallback, useEffect, useState } from "react";
+import { useAccount, useWalletClient } from "wagmi";
 
 // Environment variables
 const DAPP_URL = process.env.NEXT_PUBLIC_DAPP_URL ?? "http://localhost:3001";
@@ -19,8 +19,10 @@ const DAPP_ORIGIN = new URL(DAPP_URL).origin;
 export default function PortalPage() {
   const { wallet: smartWallet, status: walletStatus } = useWallet();
   const { address: signerAddress } = useAccount();
+  const { data: walletClient } = useWalletClient();
   const { status: authStatus } = useAuth();
   const [connectedWallet, setConnectedWallet] = useState<string | null>(null);
+  const [signature, setSignature] = useState<string | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [popupWindow, setPopupWindow] = useState<Window | null>(null);
@@ -32,6 +34,23 @@ export default function PortalPage() {
     !!smartWalletAddress && !!signerAddress && authStatus === "logged-in";
   const isLoading =
     walletStatus === "in-progress" || authStatus === "initializing";
+
+  const handleSignMessage = useCallback(
+    async (message: string) => {
+      if (!walletClient) return;
+
+      console.log("🚀 Signing message:", message);
+
+      const signature = await walletClient.signMessage({
+        message: { raw: message as `0x${string}` },
+      });
+
+      console.log("🚀 Signature:", signature);
+
+      setSignature(signature);
+    },
+    [walletClient]
+  );
 
   // Handle incoming messages from popup
   useEffect(() => {
@@ -45,10 +64,22 @@ export default function PortalPage() {
         console.log("✅ Popup is ready");
         setIsPopupReady(true);
       } else if (isValidPopupMessage(event.data)) {
-        console.log("✅ Received wallet from DApp:", event.data.wallet);
-        setConnectedWallet(event.data.wallet);
-        setIsConnecting(false);
-        setError(null);
+        // Check if this is a wallet message
+        if ("wallet" in event.data) {
+          console.log("✅ Received wallet from DApp:", event.data.wallet);
+          setConnectedWallet(event.data.wallet);
+          setIsConnecting(false);
+          setError(null);
+        }
+
+        // Check if this is a messageToSign message
+        if ("messageToSign" in event.data) {
+          console.log(
+            "📨 Received message to sign from DApp:",
+            event.data.messageToSign
+          );
+          handleSignMessage(event.data.messageToSign);
+        }
       } else {
         console.error("Received invalid message format from popup");
         setError("Received invalid message format from popup");
@@ -58,7 +89,7 @@ export default function PortalPage() {
 
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
-  }, []);
+  }, [handleSignMessage]);
 
   // Send delegated signer when popup is ready
   useEffect(() => {
@@ -73,6 +104,20 @@ export default function PortalPage() {
       return () => clearInterval(interval);
     }
   }, [isPopupReady, popupWindow, signerAddress]);
+
+  // Send signature to dapp when available
+  useEffect(() => {
+    if (isPopupReady && popupWindow && signature) {
+      const message: ParentToPopupMessage = { signature };
+
+      const interval = setInterval(() => {
+        popupWindow.postMessage(message, DAPP_ORIGIN);
+        console.log("🚀 Sent signature to DApp:", signature);
+      }, 1000);
+
+      return () => clearInterval(interval);
+    }
+  }, [isPopupReady, popupWindow, signature]);
 
   // Monitor popup lifecycle
   useEffect(() => {
