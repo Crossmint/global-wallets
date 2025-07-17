@@ -1,6 +1,10 @@
 "use client";
 
-import { useAuth, useWallet } from "@crossmint/client-sdk-react-ui";
+import {
+  type DelegatedSigner,
+  useAuth,
+  useWallet,
+} from "@crossmint/client-sdk-react-ui";
 import { useState, useEffect } from "react";
 import { LoginButton } from "@/components/login";
 import { LogoutButton } from "@/components/logout";
@@ -17,6 +21,9 @@ export default function DAppPage() {
   const { wallet, status: walletStatus } = useWallet();
   const { status: authStatus } = useAuth();
   const [receivedSigner, setReceivedSigner] = useState<string | null>(null);
+  const [delegatedSigners, setDelegatedSigners] = useState<DelegatedSigner[]>(
+    []
+  );
   const [isDelegatedSignerLoading, setIsDelegatedSignerLoading] =
     useState<boolean>(false);
 
@@ -24,6 +31,16 @@ export default function DAppPage() {
   const isLoggedIn = !!walletAddress && authStatus === "logged-in";
   const isWalletLoading =
     walletStatus === "in-progress" || authStatus === "initializing";
+
+  // Fetch delegated signers
+  useEffect(() => {
+    const fetchDelegatedSigners = async () => {
+      if (!wallet) return;
+      const signers = await wallet.delegatedSigners();
+      setDelegatedSigners(signers);
+    };
+    fetchDelegatedSigners();
+  }, [wallet]);
 
   // Send ready message to parent on mount
   useEffect(() => {
@@ -41,11 +58,23 @@ export default function DAppPage() {
       }
 
       if (isValidParentMessage(event.data)) {
-        console.log(
-          "📨 Received delegated signer from Portal:",
-          event.data.delegatedSigner
-        );
-        setReceivedSigner(event.data.delegatedSigner);
+        // Check if this is a delegatedSigner message
+        if ("delegatedSigner" in event.data) {
+          console.log(
+            "📨 Received delegated signer from Portal:",
+            event.data.delegatedSigner
+          );
+          setReceivedSigner(event.data.delegatedSigner);
+        }
+
+        // Check if this is a signature message
+        if ("signature" in event.data) {
+          console.log(
+            "📨 Received signature from Portal:",
+            event.data.signature
+          );
+          // Handle signature if needed
+        }
       }
     };
 
@@ -67,11 +96,20 @@ export default function DAppPage() {
       setIsDelegatedSignerLoading(true);
 
       console.log("🔗 Adding delegated signer to wallet...");
-      await wallet.addDelegatedSigner({
-        signer: `external-wallet:${receivedSigner}`,
-      });
+      // check if the signer is already added
+      const isSignerAdded = delegatedSigners.some(
+        (signer) => signer.signer === `external-wallet:${receivedSigner}`
+      );
+      if (!isSignerAdded) {
+        await wallet.addDelegatedSigner({
+          signer: `external-wallet:${receivedSigner}`,
+        });
 
-      console.log("✅ Delegated signer added successfully");
+        console.log("✅ Delegated signer added successfully");
+      } else {
+        console.log("🔗 Signer already added");
+      }
+
       console.log("📤 Sending wallet address back to Portal:", walletAddress);
 
       const response: PopupToParentMessage = { wallet: walletAddress };

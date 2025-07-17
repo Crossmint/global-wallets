@@ -45,10 +45,22 @@ export default function PortalPage() {
         console.log("✅ Popup is ready");
         setIsPopupReady(true);
       } else if (isValidPopupMessage(event.data)) {
-        console.log("✅ Received wallet from DApp:", event.data.wallet);
-        setConnectedWallet(event.data.wallet);
-        setIsConnecting(false);
-        setError(null);
+        // Check if this is a wallet message
+        if ("wallet" in event.data) {
+          console.log("✅ Received wallet from DApp:", event.data.wallet);
+          setConnectedWallet(event.data.wallet);
+          setIsConnecting(false);
+          setError(null);
+        }
+
+        // Check if this is a messageToSign message
+        if ("messageToSign" in event.data) {
+          console.log(
+            "📨 Received message to sign from DApp:",
+            event.data.messageToSign
+          );
+          // Handle message signing if needed
+        }
       } else {
         console.error("Received invalid message format from popup");
         setError("Received invalid message format from popup");
