@@ -48,7 +48,7 @@ export default function DAppPage() {
 
     try {
       if (!wallet) {
-        throw new Error("No EVM smart wallet connected");
+        throw new Error("No smart wallet connected");
       }
 
       setIsDelegatedSignerLoading(true);
@@ -56,11 +56,11 @@ export default function DAppPage() {
       console.log("🔗 Adding delegated signer to wallet...");
       // check if the signer is already added
       const isSignerAdded = delegatedSigners.some(
-        (signer) => signer.signer === `external-wallet:${receivedSigner}`
+        (signer) => signer.signer === receivedSigner
       );
       if (!isSignerAdded) {
         await wallet.addDelegatedSigner({
-          signer: `external-wallet:${receivedSigner}`,
+          signer: receivedSigner,
         });
 
         console.log("✅ Delegated signer added successfully");
@@ -87,19 +87,24 @@ export default function DAppPage() {
       return;
     }
 
+    if (!receivedSigner) {
+      console.error("No delegated signer found");
+      return;
+    }
+
     try {
       setIsPreparingTransactionLoading(true);
 
       console.log("📤 Sending transaction...");
 
-      // Example transaction - sending a small amount to Portal signer
+      // Example transaction - sending a small amount to arbitrary address
       const evmWallet = EVMWallet.from(wallet);
       const txResult = await evmWallet.sendTransaction({
         options: {
           experimental_prepareOnly: true, // Tx will be signed afterwards
-          experimental_signer: `external-wallet:${receivedSigner}`, // Signer will be delegated signer (Portal)
+          experimental_signer: receivedSigner, // Signer will be delegated signer (Portal)
         },
-        to: receivedSigner as `0x${string}`,
+        to: "0x223c0e6A03E8efbf4fC6353320230ad56eb8E6d6", // arbitrary address
         value: 1000000000000000n, // 0.001 ETH (IP)
       });
 
@@ -123,42 +128,32 @@ export default function DAppPage() {
     }
   };
 
-  const handleApproveTransaction = useCallback(
-    async (signature: string) => {
-      if (!wallet || !isLoggedIn || !receivedSigner) {
-        console.error("Wallet not connected");
-        return;
-      }
+  const handleApproveTransaction = useCallback(async () => {
+    if (!wallet || !isLoggedIn || !receivedSigner) {
+      console.error("Wallet not connected");
+      return;
+    }
 
-      if (!transactionId) {
-        console.error("Transaction ID not found");
-        return;
-      }
+    if (!transactionId) {
+      console.error("Transaction ID not found");
+      return;
+    }
 
-      try {
-        setIsApprovingTransactionLoading(true);
-        const evmWallet = EVMWallet.from(wallet);
+    try {
+      setIsApprovingTransactionLoading(true);
 
-        const txResult = await evmWallet.approveTransaction({
-          transactionId,
-          options: {
-            experimental_approval: {
-              signer: `external-wallet:${receivedSigner}`,
-              signature,
-            },
-          },
-        });
+      const txResult = await wallet.approve({
+        transactionId,
+      });
 
-        setTransactionHash(txResult.hash);
-        console.log("✅ Transaction approved successfully:", txResult);
-      } catch (error) {
-        console.error("Failed to approve transaction:", error);
-      } finally {
-        setIsApprovingTransactionLoading(false);
-      }
-    },
-    [wallet, isLoggedIn, transactionId, receivedSigner]
-  );
+      setTransactionHash(txResult.hash);
+      console.log("✅ Transaction approved successfully:", txResult);
+    } catch (error) {
+      console.error("Failed to approve transaction:", error);
+    } finally {
+      setIsApprovingTransactionLoading(false);
+    }
+  }, [wallet, isLoggedIn, transactionId, receivedSigner]);
 
   // Fetch delegated signers
   useEffect(() => {
@@ -207,7 +202,7 @@ export default function DAppPage() {
               "🚀 Approving transaction with signature:",
               event.data.signature
             );
-            handleApproveTransaction(event.data.signature);
+            handleApproveTransaction();
           }
         }
       }
@@ -236,13 +231,15 @@ export default function DAppPage() {
         {/* Your Wallet */}
         <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
           <div className="flex flex-col gap-4">
-            <h2 className="text-lg font-semibold text-gray-900">Your Wallet</h2>
+            <h2 className="text-lg font-semibold text-gray-900">
+              Your Account
+            </h2>
             {!isLoggedIn ? (
               <LoginButton />
             ) : isWalletLoading ? (
               <div className="flex items-center justify-center py-8">
                 <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
-                <p className="text-gray-600 text-sm ml-3">Loading wallet...</p>
+                <p className="text-gray-600 text-sm ml-3">Loading account...</p>
               </div>
             ) : (
               <WalletDisplay address={walletAddress} />
@@ -256,10 +253,7 @@ export default function DAppPage() {
             <h2 className="text-lg font-semibold text-gray-900">
               Delegated Signer
             </h2>
-            <WalletDisplay
-              text="Fetching signer..."
-              address={receivedSigner || undefined}
-            />
+            <WalletDisplay text={receivedSigner ?? "Fetching signer..."} />
             {receivedSigner && isLoggedIn && (
               <button
                 disabled={isDelegatedSignerLoading}

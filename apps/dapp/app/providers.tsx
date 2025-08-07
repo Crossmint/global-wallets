@@ -16,13 +16,13 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <CrossmintProvider apiKey={crossmintApiKey}>
       <CrossmintAuthProvider
         authModalTitle="DApp Wallet"
-        loginMethods={["web3:evm-only"]}
+        loginMethods={["email"]}
       >
         <CrossmintWalletProvider
           createOnLogin={{
             chain: "story-testnet",
             signer: {
-              type: "external-wallet",
+              type: "email",
             },
           }}
         >

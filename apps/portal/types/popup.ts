@@ -1,7 +1,7 @@
 // Message types for secure popup communication
 export type ParentToPopupMessage =
   | { delegatedSigner: string }
-  | { signature: string };
+  | { signature: string | { r: string; s: string } };
 
 export type PopupToParentMessage =
   | { wallet: string }
