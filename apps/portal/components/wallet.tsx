@@ -72,15 +72,15 @@ export function WalletDisplay({
 interface WalletCardProps {
   title: string;
   walletAddress?: string;
-  type?: string;
+  text?: string;
 }
 
-export function WalletCard({ walletAddress, title, type }: WalletCardProps) {
+export function WalletCard({ walletAddress, title, text }: WalletCardProps) {
   return (
     <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
       <div className="flex flex-col gap-4">
         <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
-        <WalletDisplay address={walletAddress} />
+        <WalletDisplay address={walletAddress} text={text} />
       </div>
     </div>
   );

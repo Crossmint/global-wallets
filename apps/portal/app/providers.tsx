@@ -4,11 +4,6 @@ import {
   CrossmintProvider,
   CrossmintWalletProvider,
 } from "@crossmint/client-sdk-react-ui";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { WagmiProvider } from "wagmi";
-
-import { config } from "@/lib/wagmi";
-const queryClient = new QueryClient();
 
 const crossmintApiKey = process.env.NEXT_PUBLIC_CROSSMINT_API_KEY ?? "";
 
@@ -18,26 +13,22 @@ if (!crossmintApiKey) {
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <WagmiProvider config={config}>
-      <QueryClientProvider client={queryClient}>
-        <CrossmintProvider apiKey={crossmintApiKey}>
-          <CrossmintAuthProvider
-            authModalTitle="Portal Wallet"
-            loginMethods={["web3:evm-only"]}
-          >
-            <CrossmintWalletProvider
-              createOnLogin={{
-                chain: "story-testnet",
-                signer: {
-                  type: "external-wallet",
-                },
-              }}
-            >
-              {children}
-            </CrossmintWalletProvider>
-          </CrossmintAuthProvider>
-        </CrossmintProvider>
-      </QueryClientProvider>
-    </WagmiProvider>
+    <CrossmintProvider apiKey={crossmintApiKey}>
+      <CrossmintAuthProvider
+        authModalTitle="Portal Wallet"
+        loginMethods={["email"]}
+      >
+        <CrossmintWalletProvider
+          createOnLogin={{
+            chain: "story-testnet",
+            signer: {
+              type: "email",
+            },
+          }}
+        >
+          {children}
+        </CrossmintWalletProvider>
+      </CrossmintAuthProvider>
+    </CrossmintProvider>
   );
 }

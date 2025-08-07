@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Portal Wallet",
-  description: "Create Wallet and interact with Portal",
+  title: "Portal",
+  description: "Create a wallet and interact with Portal",
 };
 
 export default function RootLayout({

@@ -10,7 +10,6 @@ import { isValidPopupMessage, isValidReadyMessage } from "@/types/popup";
 import { useAuth, useWallet } from "@crossmint/client-sdk-react-ui";
 import Image from "next/image";
 import { useCallback, useEffect, useState } from "react";
-import { useAccount, useWalletClient } from "wagmi";
 
 // Environment variables
 const DAPP_URL = process.env.NEXT_PUBLIC_DAPP_URL ?? "http://localhost:3001";
@@ -18,11 +17,11 @@ const DAPP_ORIGIN = new URL(DAPP_URL).origin;
 
 export default function PortalPage() {
   const { wallet: smartWallet, status: walletStatus } = useWallet();
-  const { address: signerAddress } = useAccount();
-  const { data: walletClient } = useWalletClient();
   const { status: authStatus } = useAuth();
   const [connectedWallet, setConnectedWallet] = useState<string | null>(null);
-  const [signature, setSignature] = useState<string | null>(null);
+  const [signature, setSignature] = useState<
+    string | { r: string; s: string } | null
+  >(null);
   const [isConnecting, setIsConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [popupWindow, setPopupWindow] = useState<Window | null>(null);
@@ -30,26 +29,22 @@ export default function PortalPage() {
 
   const smartWalletAddress = smartWallet?.address;
 
-  const isLoggedIn =
-    !!smartWalletAddress && !!signerAddress && authStatus === "logged-in";
+  const isLoggedIn = !!smartWalletAddress && authStatus === "logged-in";
   const isLoading =
     walletStatus === "in-progress" || authStatus === "initializing";
 
   const handleSignMessage = useCallback(
     async (message: string) => {
-      if (!walletClient) return;
+      if (!smartWallet) return;
 
       console.log("🚀 Signing message:", message);
 
-      const signature = await walletClient.signMessage({
-        message: { raw: message as `0x${string}` },
-      });
-
+      const { signature } = await smartWallet.signer.signMessage(message);
       console.log("🚀 Signature:", signature);
 
       setSignature(signature);
     },
-    [walletClient]
+    [smartWallet]
   );
 
   // Handle incoming messages from popup
@@ -93,17 +88,20 @@ export default function PortalPage() {
 
   // Send delegated signer when popup is ready
   useEffect(() => {
-    if (isPopupReady && popupWindow && signerAddress) {
-      const message: ParentToPopupMessage = { delegatedSigner: signerAddress };
+    if (isPopupReady && popupWindow && smartWallet?.signer?.locator()) {
+      const signerLocator = smartWallet.signer.locator();
+      const message: ParentToPopupMessage = {
+        delegatedSigner: signerLocator,
+      };
 
       const interval = setInterval(() => {
         popupWindow.postMessage(message, DAPP_ORIGIN);
-        console.log("🚀 Sent delegated signer to DApp:", signerAddress);
+        console.log("🚀 Sent delegated signer to DApp:", signerLocator);
       }, 1000);
 
       return () => clearInterval(interval);
     }
-  }, [isPopupReady, popupWindow, signerAddress]);
+  }, [isPopupReady, popupWindow, smartWallet?.signer?.locator]);
 
   // Send signature to dapp when available
   useEffect(() => {
@@ -135,7 +133,7 @@ export default function PortalPage() {
   }, [popupWindow]);
 
   const handleConnect = async () => {
-    if (!signerAddress) return;
+    if (!smartWallet?.signer?.locator()) return;
 
     setIsConnecting(true);
     setError(null);
@@ -180,11 +178,9 @@ export default function PortalPage() {
             height={150}
             className="mx-auto mb-6"
           />
-          <h1 className="text-2xl font-bold text-gray-900 mb-3">
-            Portal Wallets
-          </h1>
+          <h1 className="text-2xl font-bold text-gray-900 mb-3">Portal</h1>
           <p className="text-gray-600 max-w-md mx-auto text-sm">
-            Connect your wallet to external DApps
+            Connect your account to external DApps
           </p>
         </div>
         <div className="w-full max-w-sm">
@@ -207,9 +203,9 @@ export default function PortalPage() {
           className="mb-6"
         />
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Portal Wallets</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Portal</h1>
           <p className="text-gray-600 text-sm">
-            Connect your wallet to external DApps
+            Connect your account to external DApps
           </p>
         </div>
       </div>
@@ -223,7 +219,7 @@ export default function PortalPage() {
 
       {/* Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 justify-center">
-        <WalletCard title="Signer" walletAddress={signerAddress} />
+        <WalletCard title="Signer" text={smartWallet?.signer?.locator()} />
         <WalletCard title="Smart Wallet" walletAddress={smartWalletAddress} />
 
         <ConnectDApp
