@@ -4,41 +4,8 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
-catalogs:
-  default:
-    '@crossmint/client-sdk-react-ui':
-      specifier: 2.2.16
-      version: 2.2.16
-    '@tanstack/react-query':
-      specifier: 5.79.0
-      version: 5.79.0
-    '@vercel/analytics':
-      specifier: 1.5.0
-      version: 1.5.0
-    clsx:
-      specifier: 2.1.1
-      version: 2.1.1
-    next:
-      specifier: 15.2.4
-      version: 15.2.4
-    react:
-      specifier: 19.0.0
-      version: 19.0.0
-    react-dom:
-      specifier: 19.0.0
-      version: 19.0.0
-    tailwind-merge:
-      specifier: 3.0.2
-      version: 3.0.2
-    tw-animate-css:
-      specifier: 1.2.4
-      version: 1.2.4
-    viem:
-      specifier: 2.30.6
-      version: 2.30.6
-    wagmi:
-      specifier: 2.15.4
-      version: 2.15.4
+overrides:
+  bigint-buffer: file:/home/ubuntu/bigint-buffer-polyfill
 
 importers:
 
@@ -2657,9 +2624,8 @@ packages:
   big.js@6.2.2:
     resolution: {integrity: sha512-y/ie+Faknx7sZA5MfGA2xKlu0GDv8RWrXGsmlteyJQ2lvoKv9GBK/fpRMc2qlSoBAgNxrixICFCBefIq8WCQpQ==}
 
-  bigint-buffer@1.1.5:
-    resolution: {integrity: sha512-trfYco6AoZ+rKhKnxA0hgX0HAbVP/s808/EuDSe2JDzUnCp/xAsli35Orvk67UrTEcwuxZqYZDmfA2RXJgxVvA==}
-    engines: {node: '>= 10.0.0'}
+  bigint-buffer-polyfill@file:../../bigint-buffer-polyfill:
+    resolution: {directory: ../../bigint-buffer-polyfill, type: directory}
 
   bignumber.js@9.3.0:
     resolution: {integrity: sha512-EM7aMFTXbptt/wZdMlBv2t8IViwQL+h6SLHosp8Yf0dqJMTnY6iL32opnAB6kAdL0SZPuvcAzFr31o0c/R3/RA==}
@@ -2667,9 +2633,6 @@ packages:
   binary-extensions@2.3.0:
     resolution: {integrity: sha512-Ceh+7ox5qe7LJuLHoY0feh3pHuUDHAcRUeyL2VYghZwfpkNIy/+8Ocg0a3UuSoYzavmylwuLWQOf3hl0jjMMIw==}
     engines: {node: '>=8'}
-
-  bindings@1.5.0:
-    resolution: {integrity: sha512-p2q/t/mhvuOj/UeLlV6566GD/guowlr0hHxClI0W9m7MWYkL1F0hLo+0Aexs9HSPCtR1SXQ0TD3MMKrXZajbiQ==}
 
   bl@4.1.0:
     resolution: {integrity: sha512-1W07cM9gS6DcLperZfFSj+bWLtaPGSOHWhPiGzXmvVJbRLdG82sH/Kn8EtW1VqWVA54AKf2h5k5BbnIbwF3h6w==}
@@ -3292,9 +3255,6 @@ packages:
 
   fb-watchman@2.0.2:
     resolution: {integrity: sha512-p5161BqbuCaSnB8jIbzQHOlpgsPmK5rJVDfDKO91Axs5NC1uu3HRQm6wt9cd9/+GtQQIO53JdGXXoyDpTAsgYA==}
-
-  file-uri-to-path@1.0.0:
-    resolution: {integrity: sha512-0Zt+s3L7Vf1biwWZ29aARiVYLx7iMGnEUl9x33fbB/j3jR81u/O2LbqK+Bm1CDSNDKVtJ/YjwY7TUd5SkeLQLw==}
 
   fill-range@7.1.1:
     resolution: {integrity: sha512-YsGpe3WHLK8ZYi4tWDg2Jy3ebRz2rXowDxnld4bkQB00cc/1Zw9AWnC0i9ztDJitivtQvaI9KaLyKrc+hBW0yg==}
@@ -5647,6 +5607,42 @@ packages:
         optional: true
       use-sync-external-store:
         optional: true
+
+catalogs:
+  default:
+    '@crossmint/client-sdk-react-ui':
+      specifier: 2.2.16
+      version: 2.2.16
+    '@tanstack/react-query':
+      specifier: 5.79.0
+      version: 5.79.0
+    '@vercel/analytics':
+      specifier: 1.5.0
+      version: 1.5.0
+    clsx:
+      specifier: 2.1.1
+      version: 2.1.1
+    next:
+      specifier: 15.2.4
+      version: 15.2.4
+    react:
+      specifier: 19.0.0
+      version: 19.0.0
+    react-dom:
+      specifier: 19.0.0
+      version: 19.0.0
+    tailwind-merge:
+      specifier: 3.0.2
+      version: 3.0.2
+    tw-animate-css:
+      specifier: 1.2.4
+      version: 1.2.4
+    viem:
+      specifier: 2.30.6
+      version: 2.30.6
+    wagmi:
+      specifier: 2.15.4
+      version: 2.15.4
 
 snapshots:
 
@@ -8651,7 +8647,7 @@ snapshots:
     dependencies:
       '@solana/buffer-layout': 4.0.1
       '@solana/web3.js': 1.98.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)
-      bigint-buffer: 1.1.5
+      bigint-buffer: bigint-buffer-polyfill@file:../../bigint-buffer-polyfill
       bignumber.js: 9.3.0
     transitivePeerDependencies:
       - bufferutil
@@ -8754,7 +8750,7 @@ snapshots:
       '@noble/hashes': 1.8.0
       '@solana/buffer-layout': 4.0.1
       agentkeepalive: 4.6.0
-      bigint-buffer: 1.1.5
+      bigint-buffer: bigint-buffer-polyfill@file:../../bigint-buffer-polyfill
       bn.js: 5.2.2
       borsh: 0.7.0
       bs58: 4.0.1
@@ -10133,17 +10129,11 @@ snapshots:
 
   big.js@6.2.2: {}
 
-  bigint-buffer@1.1.5:
-    dependencies:
-      bindings: 1.5.0
+  bigint-buffer-polyfill@file:../../bigint-buffer-polyfill: {}
 
   bignumber.js@9.3.0: {}
 
   binary-extensions@2.3.0: {}
-
-  bindings@1.5.0:
-    dependencies:
-      file-uri-to-path: 1.0.0
 
   bl@4.1.0:
     dependencies:
@@ -10764,8 +10754,6 @@ snapshots:
   fb-watchman@2.0.2:
     dependencies:
       bser: 2.1.1
-
-  file-uri-to-path@1.0.0: {}
 
   fill-range@7.1.1:
     dependencies:

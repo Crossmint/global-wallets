@@ -10,6 +10,11 @@
     "dapp:build": "pnpm --filter dapp build",
     "dapp:start": "pnpm --filter dapp start"
   },
+  "pnpm": {
+    "overrides": {
+      "bigint-buffer": "file:/home/ubuntu/bigint-buffer-polyfill"
+    }
+  },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
