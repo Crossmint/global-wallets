@@ -137,9 +137,8 @@ export default function DAppPage() {
 
       try {
         setIsApprovingTransactionLoading(true);
-        const evmWallet = EVMWallet.from(wallet);
 
-        const txResult = await evmWallet.approveTransaction({
+        const txResult = await wallet.approve({
           transactionId,
           options: {
             experimental_approval: {
