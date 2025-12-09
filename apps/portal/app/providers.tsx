@@ -12,11 +12,10 @@ const queryClient = new QueryClient();
 
 const crossmintApiKey = process.env.NEXT_PUBLIC_CROSSMINT_API_KEY ?? "";
 
-if (!crossmintApiKey) {
-  throw new Error("NEXT_PUBLIC_CROSSMINT_API_KEY is not set");
-}
-
 export function Providers({ children }: { children: React.ReactNode }) {
+  if (typeof window !== "undefined" && !crossmintApiKey) {
+    throw new Error("NEXT_PUBLIC_CROSSMINT_API_KEY is not set");
+  }
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
