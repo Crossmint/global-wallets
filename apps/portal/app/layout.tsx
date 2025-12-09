@@ -4,6 +4,8 @@ import { Analytics } from "@vercel/analytics/react";
 import "./globals.css";
 import { Providers } from "@/app/providers";
 
+export const dynamic = "force-dynamic";
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
